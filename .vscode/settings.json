@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "ioctl.h": "c",
+        "types.h": "c",
+        "unistd.h": "c",
+        "type_traits": "c"
+    }
+}
