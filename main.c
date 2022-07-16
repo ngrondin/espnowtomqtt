@@ -60,9 +60,9 @@ int initconfig() {
         printf("Could not find conf file\n");
         return -1;
     }
-    size_t len;
+    size_t len = 100;
     ssize_t res;
-    char* line;
+    char* line = malloc(len);
     while((res = getline(&line, &len, fp)) != -1) {
         char* first = strtok(line, " ");
         if(strcmp(first, "wifi") == 0) {
@@ -82,7 +82,7 @@ int initconfig() {
             }
         } 
     }
-
+    free(line);
     printf("Succesfully configured\n");
     return 0;
 }
