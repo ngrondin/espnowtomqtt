@@ -57,7 +57,7 @@ int initconfig() {
         fp = fopen("/etc/espnowgw.conf", "r");
     }
     if(fp == NULL) {
-        printf("Could not find conf file");
+        printf("Could not find conf file\n");
         return -1;
     }
     size_t len;
@@ -83,6 +83,7 @@ int initconfig() {
         } 
     }
 
+    printf("Succesfully configured\n");
     return 0;
 }
 
