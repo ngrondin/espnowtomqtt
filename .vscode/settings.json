@@ -3,6 +3,7 @@
         "ioctl.h": "c",
         "types.h": "c",
         "unistd.h": "c",
-        "type_traits": "c"
+        "type_traits": "c",
+        "ifaddrs.h": "c"
     }
 }
