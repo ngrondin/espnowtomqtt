@@ -244,7 +244,7 @@ int processreceiveddata(uint8_t *raw_bytes, int len) {
             uint8_t *frame = &raw_bytes[rth.len];
             uint8_t type = (frame[0] & 0x0C) >> 2;
             uint8_t subtype = (frame[0] & 0xF0) >> 4;
-            printf("version %i  pad %i  type %i subtype %i", rth.version, rth.pad, type, subtype);
+            //printf("version %i  pad %i  type %i subtype %i\n", rth.version, rth.pad, type, subtype);
             if(type == 0) { // Management frame
                 if(subtype == 13) { // Action Frame
                     uint16_t actionheaderlen = 24;
@@ -299,7 +299,7 @@ int main(int argc, char *argv[]) {
         if(len < 0) {
             printf("Socket receive error: %i\n", len);
         } else {
-            printf("Recevied %i bytes\n", len);
+            //printf("Recevied %i bytes\n", len);
             processreceiveddata(raw_bytes, len);
         }
     }
