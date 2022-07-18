@@ -279,7 +279,7 @@ int main(int argc, char *argv[]) {
     }  
 
     printf("Starting monitoring loop\n");
-    uint8_t raw_bytes[512];
+    uint8_t *raw_bytes = malloc(512);
     while(1) {
         int len = recvfrom(sock, raw_bytes, 512, MSG_TRUNC, NULL, 0);
         if(len < 0) {
