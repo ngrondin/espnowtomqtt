@@ -226,6 +226,7 @@ int parseradiotapheader(struct radiotap_header *rth, uint8_t *rawdata, int len) 
         if(rth->present & 0x20) {
             rth->antenna_signal = rawdata[i++];
         }
+        return 0;
     } else {
         return -1;
     }
