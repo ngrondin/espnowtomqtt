@@ -227,32 +227,34 @@ int parseradiotapheader(struct radiotap_header *rth, uint8_t *rawdata) {
     }
 }
 
-int processreceiveddata(uint8_t *raw_bytes) {
-    struct radiotap_header rth = {};
-    parseradiotapheader(&rth, raw_bytes);
-    uint8_t *frame = &raw_bytes[rth.len];
-    uint8_t type = (frame[0] & 0x0C) >> 2;
-    uint8_t subtype = (frame[0] & 0xF0) >> 4;
-    if(type == 0) { // Management frame
-        if(subtype == 13) { // Action Frame
-            uint16_t actionheaderlen = 24;
-            uint8_t *srcaddr = &frame[10];
-            char srcaddrstr[18];
-            address_to_string(srcaddrstr, srcaddr);
-            uint8_t *framebody = &frame[actionheaderlen];
-            if(framebody[0] == 127 && framebody[1] == 24 && framebody[2] == 254 && framebody[3] == 52) {
-                if(framebody[8] == 221 && framebody[13] == 4) {
-                    int espdatalen = framebody[9] - 5;
-                    int espversion = framebody[14];
-                    uint8_t *espdata = &framebody[15];
-                    while(espdatalen > 0 && espdata[espdatalen - 1] == 0) espdatalen--;
-                    printf("ESP data from %s (%i) : %s\n", srcaddrstr, rth.antenna_signal, espdata);
-                    struct map_item *dev = firstdev;
-                    while(dev != NULL) {
-                        if(strcmp(dev->addr, srcaddrstr) == 0) {
-                            sendmqtt(dev->topic, espdata, espdatalen);
+int processreceiveddata(uint8_t *raw_bytes, int len) {
+    if(len >= 8) {
+        struct radiotap_header rth = {};
+        parseradiotapheader(&rth, raw_bytes);
+        uint8_t *frame = &raw_bytes[rth.len];
+        uint8_t type = (frame[0] & 0x0C) >> 2;
+        uint8_t subtype = (frame[0] & 0xF0) >> 4;
+        if(type == 0) { // Management frame
+            if(subtype == 13) { // Action Frame
+                uint16_t actionheaderlen = 24;
+                uint8_t *srcaddr = &frame[10];
+                char srcaddrstr[18];
+                address_to_string(srcaddrstr, srcaddr);
+                uint8_t *framebody = &frame[actionheaderlen];
+                if(framebody[0] == 127 && framebody[1] == 24 && framebody[2] == 254 && framebody[3] == 52) {
+                    if(framebody[8] == 221 && framebody[13] == 4) {
+                        int espdatalen = framebody[9] - 5;
+                        int espversion = framebody[14];
+                        uint8_t *espdata = &framebody[15];
+                        while(espdatalen > 0 && espdata[espdatalen - 1] == 0) espdatalen--;
+                        printf("ESP data from %s (%i) : %s\n", srcaddrstr, rth.antenna_signal, espdata);
+                        struct map_item *dev = firstdev;
+                        while(dev != NULL) {
+                            if(strcmp(dev->addr, srcaddrstr) == 0) {
+                                sendmqtt(dev->topic, espdata, espdatalen);
+                            }
+                            dev = dev->next;
                         }
-                        dev = dev->next;
                     }
                 }
             }
@@ -285,8 +287,8 @@ int main(int argc, char *argv[]) {
         if(len < 0) {
             printf("Socket receive error: %i\n", len);
         } else {
-            printf("Recevied raw data\n");
-            processreceiveddata(raw_bytes);
+            printf("Recevied %i bytes\n", len);
+            processreceiveddata(raw_bytes, len);
         }
     }
     printf("Exiting\n");
