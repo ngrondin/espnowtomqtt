@@ -280,12 +280,14 @@ int main(int argc, char *argv[]) {
 
     printf("Starting monitoring loop\n");
     uint8_t *raw_bytes = malloc(512);
-    while(1) {
+    while(sock > -1) {
         int len = recvfrom(sock, raw_bytes, 512, MSG_TRUNC, NULL, 0);
         if(len < 0) {
             printf("Socket receive error: %i\n", len);
         } else {
+            printf("Recevied raw data\n");
             processreceiveddata(raw_bytes);
         }
     }
+    printf("Exiting\n");
 }
