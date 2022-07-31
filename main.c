@@ -111,55 +111,51 @@ int initwifi() {
         return res;
     }
 
-    if(pwrq.u.mode == 6) {
-        printf("Wifi already in monitor mode\n");
-        return 0;
-    }
+    if(pwrq.u.mode != 6) {
+        res = ioctl(sock, SIOCGIFFLAGS, &ifr);
+        if(res != 0) {
+            printf("Cannot get adapter status: %s\n", strerror(res));
+            return res;
+        }
 
-    res = ioctl(sock, SIOCGIFFLAGS, &ifr);
-    if(res != 0) {
-        printf("Cannot get adapter status: %s\n", strerror(res));
-        return res;
-    }
+        if(ifr.ifr_flags & IFF_UP != 0) {
+            ifr.ifr_flags ^= IFF_UP;
+            res = ioctl(sock, SIOCSIFFLAGS, &ifr);
+            if(res != 0) {
+                printf("Error stopping adapter: %s\n", strerror(res));
+                return res;
+            }
+        }
 
-    if(ifr.ifr_flags & IFF_UP != 0) {
+        pwrq.u.mode = 6;
+        res = ioctl(sock, SIOCSIWMODE, &pwrq);
+        if(res != 0) {
+            printf("Wifi could not be set to monitor mode: %s\n", strerror(res));
+            return res;
+        }
+
         ifr.ifr_flags ^= IFF_UP;
         res = ioctl(sock, SIOCSIFFLAGS, &ifr);
         if(res != 0) {
-            printf("Error stopping adapter: %s\n", strerror(res));
+            printf("Error starting adapter: %s\n", strerror(res));
+            return res;
+        }
+        printf("Wifi set to monitor mode\n");
+    } else {
+        printf("Adapter is already in monitor mode\n");
+    }
+
+    if(!(pwrq.u.freq.e == 0 && pwrq.u.freq.m == 1)) {
+        pwrq.u.freq.m = 1;
+        pwrq.u.freq.e = 0;
+        pwrq.u.freq.flags = IW_FREQ_FIXED;
+        res = ioctl(sock, SIOCSIWFREQ, &pwrq);
+        if(res != 0) {
+            printf("Wifi channel could not be set: %s\n", strerror(res));
             return res;
         }
     }
 
-    pwrq.u.mode = 6;
-    res = ioctl(sock, SIOCSIWMODE, &pwrq);
-    if(res != 0) {
-        printf("Wifi could not be set to monitor mode: %s\n", strerror(res));
-        return res;
-    }
-
-    double in = targetfreq;
-    pwrq.u.freq.e = 0;
-    while(in > 1e9) {
-      in /= 10;
-      pwrq.u.freq.e++;
-    }
-    pwrq.u.freq.m = (long) in;
-    pwrq.u.freq.flags = IW_FREQ_FIXED;
-    res = ioctl(sock, SIOCSIWFREQ, &pwrq);
-    if(res != 0) {
-        printf("Wifi frequency could not be set to: %d: %s\n", targetfreq, strerror(res));
-        return res;
-    }
-
-    ifr.ifr_flags ^= IFF_UP;
-    res = ioctl(sock, SIOCSIFFLAGS, &ifr);
-    if(res != 0) {
-        printf("Error starting adapter: %s\n", strerror(res));
-        return res;
-    }
-
-    printf("Wifi set to monitor mode\n");
     return 0;
 }
 
