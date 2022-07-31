@@ -71,8 +71,6 @@ int initconfig() {
 }
 
 int initwifi() {
-    int ret = 0;
-
     struct ifreq ifr;
     memset(&ifr, 0, sizeof(ifr));
     strncpy(ifr.ifr_name, wifiname, IFNAMSIZ);
@@ -115,7 +113,7 @@ int initwifi() {
 
     if(pwrq.u.mode == 6) {
         printf("Wifi already in monitor mode\n");
-        return res;
+        return 0;
     }
 
     res = ioctl(sock, SIOCGIFFLAGS, &ifr);
@@ -140,6 +138,20 @@ int initwifi() {
         return res;
     }
 
+    double in = targetfreq;
+    pwrq.u.freq.e = 0;
+    while(in > 1e9) {
+      in /= 10;
+      pwrq.u.freq.e++;
+    }
+    pwrq.u.freq.m = (long) in;
+    pwrq.u.freq.flags = IW_FREQ_FIXED;
+    res = ioctl(sock, SIOCSIWFREQ, &pwrq);
+    if(res != 0) {
+        printf("Wifi frequency could not be set to: %d: %s\n", targetfreq, strerror(res));
+        return res;
+    }
+
     ifr.ifr_flags ^= IFF_UP;
     res = ioctl(sock, SIOCSIFFLAGS, &ifr);
     if(res != 0) {
@@ -148,7 +160,7 @@ int initwifi() {
     }
 
     printf("Wifi set to monitor mode\n");
-    return ret;
+    return 0;
 }
 
 int initmqtt() {

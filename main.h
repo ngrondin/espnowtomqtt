@@ -1,6 +1,8 @@
 int sock = -1;
 int ifid = -1;
 MQTTClient mqttclient;
+double targetfreq = 2412000000;
+    
 
 struct map_item {
     char* addr;
