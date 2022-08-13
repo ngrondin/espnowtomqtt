@@ -188,6 +188,7 @@ int sendmqtt(char *topic, char *msg, int len) {
     if(!MQTTClient_isConnected(mqttclient)) 
         res = initmqtt();
     if(res != 0) {
+        printf("Failed to reconnect to MQTT\n");
         return res;
     }
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
@@ -265,6 +266,7 @@ int processreceiveddata(uint8_t *raw_bytes, int len) {
                             int espdatalen = framebody[9] - 5;
                             int espversion = framebody[14];
                             uint8_t *espdata = &framebody[15];
+                            espdata[espdatalen] = 0; //This alters the source data, could be copied to a new array
                             while(espdatalen > 0 && espdata[espdatalen - 1] == 0) espdatalen--;
                             printf("ESP data from %s (%i) : %s\n", srcaddrstr, rth.antenna_signal, espdata);
                             struct map_item *dev = firstdev;
@@ -307,7 +309,6 @@ int main(int argc, char *argv[]) {
         if(len < 0) {
             printf("Socket receive error: %i\n", len);
         } else {
-            //printf("Recevied %i bytes\n", len);
             processreceiveddata(raw_bytes, len);
         }
     }
