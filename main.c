@@ -184,20 +184,13 @@ void terminate() {
 }
 
 int sendmqtt(char *topic, char *msg, int len) {
-    int res = 0;
-    if(!MQTTClient_isConnected(mqttclient)) 
-        res = initmqtt();
-    if(res != 0) {
-        printf("Failed to reconnect to MQTT: %s\n", MQTTClient_strerror(res));
-        return res;
-    }
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
     MQTTClient_deliveryToken token;
     pubmsg.payload = msg;
     pubmsg.payloadlen = len;
     pubmsg.qos = 1;
     pubmsg.retained = 0;
-    res = MQTTClient_publishMessage(mqttclient, topic, &pubmsg, &token);
+    int res = MQTTClient_publishMessage(mqttclient, topic, &pubmsg, &token);
     if(res != 0) {
         printf("Error publishing a MQTT message: %s\n", MQTTClient_strerror(res));
         return res;
@@ -209,6 +202,29 @@ int sendmqtt(char *topic, char *msg, int len) {
         return res;
     }
     printf("MQTT message completed\n");
+}
+
+int sendmqttgarrantee(char *topic, char *msg, int len) {
+    int complete = 0;
+    while (complete == 0) {
+        int res = sendmqtt(topic, msg, len);
+        if(res == 0) {
+            complete = 1;
+        } else if(res == -3) {
+            //disconnected, reconnect
+            int subres = initmqtt();
+            if(subres != 0) {
+                printf("Failed to reconnect to MQTT: %s\n", MQTTClient_strerror(res));
+                return subres;
+            }
+        } else if(res == -4) {
+            //max messages, retry
+        } else {
+            printf("Failed to send MQTT message: %s\n", MQTTClient_strerror(res));
+            return res;
+        }
+    }
+    return 0;
 }
 
 int parseradiotapheader(struct radiotap_header *rth, uint8_t *rawdata, int len) {
@@ -274,7 +290,7 @@ int processreceiveddata(uint8_t *raw_bytes, int len) {
                             struct map_item *dev = firstdev;
                             while(dev != NULL) {
                                 if(strcmp(dev->addr, srcaddrstr) == 0) {
-                                    sendmqtt(dev->topic, espdata, espdatalen);
+                                    sendmqttgarrantee(dev->topic, espdata, espdatalen);
                                 }
                                 dev = dev->next;
                             }
