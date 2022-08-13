@@ -163,7 +163,7 @@ int initmqtt() {
     int res = MQTTClient_create(&mqttclient, mqtturl, "espgw", MQTTCLIENT_PERSISTENCE_NONE, NULL);
     if(res != 0) {
         printf("Error creating MQTT client: %i\n", res);
-        return -1;
+        return res;
     }
 
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
@@ -172,7 +172,7 @@ int initmqtt() {
     res = MQTTClient_connect(mqttclient, &conn_opts); 
     if(res != 0) {
         printf("Error connecting MQTT client %i\n", res);
-        return -1;
+        return res;
     }
     printf("Connected to MQTT\n");
     return 0;
@@ -188,7 +188,7 @@ int sendmqtt(char *topic, char *msg, int len) {
     if(!MQTTClient_isConnected(mqttclient)) 
         res = initmqtt();
     if(res != 0) {
-        printf("Failed to reconnect to MQTT\n");
+        printf("Failed to reconnect to MQTT: %s\n", MQTTClient_strerror(res));
         return res;
     }
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
@@ -199,14 +199,16 @@ int sendmqtt(char *topic, char *msg, int len) {
     pubmsg.retained = 0;
     res = MQTTClient_publishMessage(mqttclient, topic, &pubmsg, &token);
     if(res != 0) {
-        printf("Error publishing a message: %i\n", res);
+        printf("Error publishing a MQTT message: %s\n", MQTTClient_strerror(res));
         return res;
     }
+    printf("MQTT message published\n");
     res = MQTTClient_waitForCompletion(mqttclient, token, 2000);
     if(res != 0) {
-        printf("Message never completed: %i\n", res);
+        printf("MQTT Message never completed: %s\n", MQTTClient_strerror(res));
         return res;
     }
+    printf("MQTT message completed\n");
 }
 
 int parseradiotapheader(struct radiotap_header *rth, uint8_t *rawdata, int len) {
